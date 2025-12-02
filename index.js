@@ -13,7 +13,7 @@ dayjs.extend(timezone);
 
 const TW_ZONE = process.env.TIMEZONE || "Asia/Taipei";
 
-// ===== LINE 設定 =====
+// ===== LINE 設定 ===== 
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.LINE_CHANNEL_SECRET,
