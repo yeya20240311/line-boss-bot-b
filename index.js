@@ -71,23 +71,47 @@ async function loadBossData() {
   }
 }
 
-// ===== 發送通知（加完整 debug log） =====
 async function sendNotifications() {
   const now = dayjs().tz(TW_ZONE);
 
-  for (const [name, b] of Object.entries(bossData)) {
-    if (!b.nextRespawn || !b.interval) continue;
+  // ===== 判斷總通知開關 =====
+  const globalNotifySwitchCell = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!H2`,
+  });
+  const globalNotifySwitch = globalNotifySwitchCell.data.values?.[0]?.[0]?.trim() || "開啟通知";
 
-    const resp = dayjs(b.nextRespawn).tz(TW_ZONE);
-    const diffMin = resp.diff(now, "minute");
+  if (globalNotifySwitch === "關閉通知") {
+    console.log("⚠️ 總通知已關閉，本輪不發通知");
+    return; // 直接跳過發通知
+  }
 
+  // ===== 依照各 Boss 狀態發送通知 =====
+for (const [name, b] of Object.entries(bossData)) {
+  if (!b.nextRespawn || !b.interval) continue;
+
+  const resp = dayjs(b.nextRespawn).tz(TW_ZONE);
+  const diffMin = resp.diff(now, "minute");
+
+  // 這裡貼上判斷星期幾通知的程式
+  const today = now.day(); // 0=日,1=一...6=六
+  let shouldNotify = false;
+  if (b.notifyDate === "ALL" || b.notifyDate === "9") {
+      shouldNotify = true;
+  } else if (b.notifyDate === "0") {
+      shouldNotify = false;
+  } else {
+      const notifyDays = b.notifyDate.split(".").map(d => parseInt(d, 10));
+      if (notifyDays.includes(today)) shouldNotify = true;
+  }
+    
     // 顯示每筆 Boss 狀態，方便 debug
     console.log(`📌 現在時間: ${now.format()} | Boss: ${name} | nextRespawn: ${b.nextRespawn} | diffMin: ${diffMin} | notified: ${b.notified}`);
 
-    // 前 10 分鐘通知
-    if (diffMin > 0 && diffMin <= 10 && !b.notified) {
+    // **只在剩餘 10 分鐘時通知一次**
+    if (diffMin === 10 && !b.notified && shouldNotify) {
       const notifyText = `⏰ 預告：${name} 將於 ${resp.format("HH:mm")} 重生（剩餘 ${diffMin} 分鐘）`;
-      const targetId = process.env.LINE_NOTIFY_ID; // 個人或群組 ID
+      const targetId = process.env.LINE_NOTIFY_ID;
 
       if (!targetId) {
         console.warn("⚠️ LINE_NOTIFY_ID 未設定");
@@ -96,18 +120,21 @@ async function sendNotifications() {
 
       try {
         await client.pushMessage(targetId, { type: "text", text: notifyText });
-        b.notified = true;
+        b.notified = true; // 標記已通知
         console.log(`✅ 已通知 ${name}: ${notifyText}`);
       } catch (err) {
-        // 印出完整 LINE API 回傳的錯誤，方便排查
         console.error(`❌ 發送通知失敗（${name}）`, err.response?.data || err);
       }
-    } else if (diffMin <= 0) {
-      b.notified = false; // 清除通知狀態，下一輪可以重新通知
+    } 
+    // 當 Boss 已經重生，清除通知狀態
+    else if (diffMin < 10) {
+      b.notified = false;
     }
   }
 }
 
+
+    
 // ===== Express Server =====
 const app = express();
 app.get("/", (req, res) => res.send("B Bot is running (Notify only)."));
