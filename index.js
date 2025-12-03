@@ -71,7 +71,7 @@ async function loadBossData() {
   }
 }
 
-// ===== 發送通知 =====
+// ===== 發送通知（加完整 debug log） =====
 async function sendNotifications() {
   const now = dayjs().tz(TW_ZONE);
 
@@ -81,26 +81,29 @@ async function sendNotifications() {
     const resp = dayjs(b.nextRespawn).tz(TW_ZONE);
     const diffMin = resp.diff(now, "minute");
 
+    // 顯示每筆 Boss 狀態，方便 debug
+    console.log(`📌 現在時間: ${now.format()} | Boss: ${name} | nextRespawn: ${b.nextRespawn} | diffMin: ${diffMin} | notified: ${b.notified}`);
+
     // 前 10 分鐘通知
-    if (diffMin > 0 && diffMin <= 10) {
-      if (b.notified) continue;
-
+    if (diffMin > 0 && diffMin <= 10 && !b.notified) {
       const notifyText = `⏰ 預告：${name} 將於 ${resp.format("HH:mm")} 重生（剩餘 ${diffMin} 分鐘）`;
-
       const targetId = process.env.LINE_NOTIFY_ID; // 個人或群組 ID
 
-      if (targetId) {
-        try {
-          await client.pushMessage(targetId, { type: "text", text: notifyText });
-          b.notified = true;
-          console.log(`📢 已通知 ${name}`);
-        } catch (err) {
-          console.error(`❌ 發送通知失敗（${name}）`, err.originalError?.response?.data);
-        }
+      if (!targetId) {
+        console.warn("⚠️ LINE_NOTIFY_ID 未設定");
+        continue;
       }
 
+      try {
+        await client.pushMessage(targetId, { type: "text", text: notifyText });
+        b.notified = true;
+        console.log(`✅ 已通知 ${name}: ${notifyText}`);
+      } catch (err) {
+        // 印出完整 LINE API 回傳的錯誤，方便排查
+        console.error(`❌ 發送通知失敗（${name}）`, err.response?.data || err);
+      }
     } else if (diffMin <= 0) {
-      b.notified = false; // 清除通知狀態
+      b.notified = false; // 清除通知狀態，下一輪可以重新通知
     }
   }
 }
