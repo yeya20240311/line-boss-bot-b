@@ -107,7 +107,7 @@ async function sendNotifications() {
     }
   }
 }
-
+// =====
 // ===== 每分鐘自動執行 =====
 cron.schedule("* * * * *", async () => {
   await loadBossData();
