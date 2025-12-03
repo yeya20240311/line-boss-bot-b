@@ -87,26 +87,23 @@ async function sendNotifications() {
   }
 
   // ===== 依照各 Boss 狀態發送通知 =====
-for (const [name, b] of Object.entries(bossData)) {
-  if (!b.nextRespawn || !b.interval) continue;
+  for (const [name, b] of Object.entries(bossData)) {
+    if (!b.nextRespawn || !b.interval) continue;
 
-  const resp = dayjs(b.nextRespawn).tz(TW_ZONE);
-  const diffMin = resp.diff(now, "minute");
+    const resp = dayjs(b.nextRespawn).tz(TW_ZONE);
+    const diffMin = resp.diff(now, "minute");
 
-  // 這裡貼上判斷星期幾通知的程式
-  const today = now.day(); // 0=日,1=一...6=六
-  let shouldNotify = false;
-  if (b.notifyDate === "ALL" || b.notifyDate === "9") {
+    // 判斷是否今天要通知
+    const today = now.day(); // 0=日,1=一...6=六
+    let shouldNotify = false;
+    if (b.notifyDate === "ALL" || b.notifyDate === "9") {
       shouldNotify = true;
-  } else if (b.notifyDate === "0") {
+    } else if (b.notifyDate === "0") {
       shouldNotify = false;
-  } else {
+    } else {
       const notifyDays = b.notifyDate.split(".").map(d => parseInt(d, 10));
       if (notifyDays.includes(today)) shouldNotify = true;
-  }
-    
-    // 顯示每筆 Boss 狀態，方便 debug
-    console.log(`📌 現在時間: ${now.format()} | Boss: ${name} | nextRespawn: ${b.nextRespawn} | diffMin: ${diffMin} | notified: ${b.notified}`);
+    }
 
     // **只在剩餘 10 分鐘時通知一次**
     if (diffMin === 10 && !b.notified && shouldNotify) {
@@ -132,6 +129,7 @@ for (const [name, b] of Object.entries(bossData)) {
     }
   }
 }
+
 
 
     
@@ -176,7 +174,7 @@ async function handleMessageEvent(event) {
     });
   }
 }
-// ===== TEST 123 =====
+
 // ===== Express Webhook =====
 app.post("/webhook", express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }), async (req, res) => {
   const events = req.body.events || [];
