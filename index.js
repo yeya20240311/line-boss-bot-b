@@ -113,7 +113,7 @@ cron.schedule("* * * * *", async () => {
   await loadBossData();
   await sendNotifications();
 });
-// Test auto-deploy 123
+
 // ===== Express Server =====
 const app = express();
 app.get("/", (req, res) => res.send("B Bot is running (Notify only)."));
