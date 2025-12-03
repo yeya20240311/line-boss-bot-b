@@ -108,6 +108,16 @@ async function sendNotifications() {
   }
 }
 
+// ===== Express Server =====
+const app = express();
+app.get("/", (req, res) => res.send("B Bot is running (Notify only)."));
+
+const PORT = process.env.PORT || 10001;
+app.listen(PORT, () => {
+  console.log(`🚀 LINE Boss 機器人已啟動 Port: ${PORT}`);
+});
+
+
 // ===== /我的ID 指令 =====
 async function handleMessageEvent(event) {
   if (event.type !== "message" || event.message.type !== "text") return;
@@ -154,11 +164,3 @@ cron.schedule("* * * * *", async () => {
   await sendNotifications();
 });
 
-// ===== Express Server =====
-const app = express();
-app.get("/", (req, res) => res.send("B Bot is running (Notify only)."));
-
-const PORT = process.env.PORT || 10001;
-app.listen(PORT, () => {
-  console.log(`🚀 LINE Boss 機器人已啟動 Port: ${PORT}`);
-});
