@@ -107,50 +107,22 @@ async function sendNotifications() {
     }
   }
 }
-// ===== /我的ID 指令 =====
-import express from "express"; // 確保已經有 import express
-import { Client } from "@line/bot-sdk"; // 確保已經有 import Client
 
-// 假設 client 已經初始化
-// const client = new Client({ channelAccessToken, channelSecret });
-
-async function handleMessageEvent(event) {
-  if (event.type !== "message" || event.message.type !== "text") return;
-
-  const text = event.message.text.trim();
-
-  // /我的ID 指令
-  if (text === "/我的ID") {
-    let idText = "";
-
-    if (event.source.type === "group") {
-      const groupId = event.source.groupId;
-      idText = `📌 群組 ID：${groupId}`;
-    } else if (event.source.type === "room") {
-      const roomId = event.source.roomId;
-      idText = `📌 多人聊天 ID：${roomId}`;
-    } else {
-      const userId = event.source.userId || "無法取得";
-      idText = `📌 個人 ID：${userId}`;
-    }
-
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: idText,
-    });
+// ===== 測試 BOT B 自己的 ID =====
+async function logMyId() {
+  try {
+    const profile = await client.getProfile(process.env.LINE_NOTIFY_ID);
+    console.log(`📌 BOT B 的 LINE ID: ${profile.userId}`);
+    console.log(`📌 BOT B 名稱: ${profile.displayName}`);
+  } catch (err) {
+    console.error("❌ 無法取得 BOT B 的 LINE ID", err.response?.data || err);
   }
 }
-
-// ===== Express Webhook =====
-app.post("/webhook", express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }), async (req, res) => {
-  const events = req.body.events || [];
-  await Promise.all(events.map(handleMessageEvent));
-  res.sendStatus(200);
-});
 
 
 // ===== 每分鐘自動執行 =====
 cron.schedule("* * * * *", async () => {
+  await logMyId();       // <- 先印出 BOT B 的 ID
   await loadBossData();
   await sendNotifications();
 });
