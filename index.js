@@ -65,7 +65,6 @@ async function loadBossData() {
       };
     });
 
-    console.log(`✅ 已從 Google Sheets 載入 ${rows.length} 筆資料`);
   } catch (err) {
     console.error("❌ 無法讀取 Google Sheets", err);
   }
